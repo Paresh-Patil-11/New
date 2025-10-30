@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
-  Phone,
   Calendar,
   Heart,
   Users,
@@ -15,26 +14,37 @@ import {
 const Home = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  // 5 DIFFERENT IMAGES FOR SLIDER
   const slides = [
     {
-      image:
-        "https://plus.unsplash.com/premium_photo-1682130157004-057c137d96d5?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8aG9zcGl0YWx8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&q=60&w=600",
+      id: 1,
+      image: "https://images.unsplash.com/photo-1538108149393-fbbd81895907?w=1920&h=600&fit=crop",
+      title: "Exceptional Healthcare",
+      subtitle: "Your health is our priority"
     },
     {
-      image:
-        "https://plus.unsplash.com/premium_photo-1682130157004-057c137d96d5?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8aG9zcGl0YWx8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&q=60&w=600",
+      id: 2,
+      image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1920&h=600&fit=crop",
+      title: "Expert Medical Team",
+      subtitle: "Board-certified specialists"
     },
     {
-      image:
-        "https://plus.unsplash.com/premium_photo-1682130157004-057c137d96d5?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8aG9zcGl0YWx8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&q=60&w=600",
+      id: 3,
+      image: "https://images.unsplash.com/photo-1631815588090-d4bfec5b1ccb?w=1920&h=600&fit=crop",
+      title: "Modern Facilities",
+      subtitle: "State-of-the-art equipment"
     },
     {
-      image:
-        "https://plus.unsplash.com/premium_photo-1682130157004-057c137d96d5?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8aG9zcGl0YWx8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&q=60&w=600",
+      id: 4,
+      image: "https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=1920&h=600&fit=crop",
+      title: "24/7 Emergency Care",
+      subtitle: "Always here when you need us"
     },
     {
-      image:
-        "https://plus.unsplash.com/premium_photo-1682130157004-057c137d96d5?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8aG9zcGl0YWx8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&q=60&w=600",
+      id: 5,
+      image: "https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?w=1920&h=600&fit=crop",
+      title: "Comprehensive Services",
+      subtitle: "Complete healthcare solutions"
     },
   ];
 
@@ -42,48 +52,42 @@ const Home = () => {
     {
       icon: Heart,
       title: "Cardiology",
-      description:
-        "Comprehensive heart care with advanced diagnostic and treatment options.",
+      description: "Comprehensive heart care with advanced diagnostic and treatment options.",
       color: "text-red-600",
       bgColor: "bg-red-50",
     },
     {
       icon: Users,
       title: "Neurology",
-      description:
-        "Expert diagnosis and treatment of brain, spinal cord, and nervous system disorders.",
+      description: "Expert diagnosis and treatment of brain, spinal cord, and nervous system disorders.",
       color: "text-purple-600",
       bgColor: "bg-purple-50",
     },
     {
       icon: Award,
       title: "Orthopedics",
-      description:
-        "Specialized care for bones, joints, ligaments, and musculoskeletal conditions.",
+      description: "Specialized care for bones, joints, ligaments, and musculoskeletal conditions.",
       color: "text-blue-600",
       bgColor: "bg-blue-50",
     },
     {
       icon: Heart,
       title: "Pediatrics",
-      description:
-        "Gentle and comprehensive healthcare services for infants, children, and adolescents.",
+      description: "Gentle and comprehensive healthcare services for infants, children, and adolescents.",
       color: "text-pink-600",
       bgColor: "bg-pink-50",
     },
     {
       icon: Users,
       title: "Primary Care",
-      description:
-        "Your first point of contact for routine check-ups, preventive care, and general health.",
+      description: "Your first point of contact for routine check-ups, preventive care, and general health.",
       color: "text-green-600",
       bgColor: "bg-green-50",
     },
     {
       icon: Clock,
       title: "Emergency Care",
-      description:
-        "24/7 emergency medical services with rapid response and expert care.",
+      description: "24/7 emergency medical services with rapid response and expert care.",
       color: "text-orange-600",
       bgColor: "bg-orange-50",
     },
@@ -96,8 +100,7 @@ const Home = () => {
       specialization: "Cardiologist",
       experience: "15+ years",
       rating: 4.9,
-      image:
-        "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop&crop=face",
+      image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop&crop=face",
     },
     {
       id: 2,
@@ -105,8 +108,7 @@ const Home = () => {
       specialization: "Neurologist",
       experience: "12+ years",
       rating: 4.8,
-      image:
-        "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop&crop=face",
+      image: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop&crop=face",
     },
     {
       id: 3,
@@ -114,8 +116,7 @@ const Home = () => {
       specialization: "Pediatrician",
       experience: "10+ years",
       rating: 4.9,
-      image:
-        "https://images.unsplash.com/photo-1594824475065-8c2e5d61acea?w=400&h=400&fit=crop&crop=face",
+      image: "https://images.unsplash.com/photo-1594824475065-8c2e5d61acea?w=400&h=400&fit=crop&crop=face",
     },
     {
       id: 4,
@@ -123,8 +124,7 @@ const Home = () => {
       specialization: "Orthopedic Surgeon",
       experience: "18+ years",
       rating: 4.7,
-      image:
-        "https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=400&h=400&fit=crop&crop=face",
+      image: "https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=400&h=400&fit=crop&crop=face",
     },
   ];
 
@@ -155,10 +155,11 @@ const Home = () => {
     },
   ];
 
+  // AUTO-SLIDE EVERY 3 SECONDS
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000);
+    }, 3000);
 
     return () => clearInterval(timer);
   }, [slides.length]);
@@ -177,6 +178,7 @@ const Home = () => {
 
   return (
     <div className="min-h-screen">
+      {/* HERO SLIDER - 5 IMAGES */}
       <section className="relative h-[600px] overflow-hidden">
         <div className="relative h-full">
           {slides.map((slide, index) => (
@@ -190,9 +192,15 @@ const Home = () => {
                 <div
                   className="absolute inset-0 bg-cover bg-center"
                   style={{
-                    backgroundImage: `linear-gradient(rgba(0, 109, 119, 0.7), rgba(0, 109, 119, 0.7)), url('https://images.unsplash.com/photo-1538108149393-fbbd81895907?w=1920&h=600&fit=crop')`,
+                    backgroundImage: `linear-gradient(rgba(0, 109, 119, 0.7), rgba(0, 109, 119, 0.7)), url('${slide.image}')`,
                   }}
                 />
+                <div className="absolute inset-0 flex items-center justify-center text-center text-white px-4">
+                  <div>
+                    <h1 className="text-5xl md:text-6xl font-bold mb-4">{slide.title}</h1>
+                    <p className="text-xl md:text-2xl">{slide.subtitle}</p>
+                  </div>
+                </div>
               </div>
             </div>
           ))}
@@ -214,7 +222,7 @@ const Home = () => {
           <ChevronRight className="h-6 w-6" />
         </button>
 
-        {/* Slide Indicators */}
+        {/* Slide Indicators - SHOWS ALL 5 */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex space-x-2 z-20">
           {slides.map((_, index) => (
             <button

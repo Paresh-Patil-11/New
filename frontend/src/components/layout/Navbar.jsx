@@ -1,29 +1,21 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { Heart, Menu, X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-
-// Updated authentication hook
-const useAuth = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
-
-  const login = (role = "patient") => {
-    setIsAuthenticated(true);
-    setUser({ role });
-  };
-
-  const logout = () => {
-    setIsAuthenticated(false);
-    setUser(null);
-  };
-
-  return { user, isAuthenticated, login, logout };
-};
+import { useAuth } from "../../contexts/AuthContext";
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const navigation = [
     { name: "Home", href: "/" },
@@ -35,86 +27,90 @@ const Navbar = () => {
 
   const isActiveLink = (href) => location.pathname === href;
 
+  const handleLogout = () => {
+    logout();
+    setIsMenuOpen(false);
+  };
+
   return (
-    <>
-      {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-white shadow-md transition-shadow duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <Link
-              to="/"
-              className="flex items-center space-x-2 rounded-lg p-1 transition-colors hover:bg-gray-50"
-            >
-              <Heart className="h-8 w-8 text-[#006D77]" />
-              <span className="text-xl font-extrabold text-gray-800">MedCare</span>
-            </Link>
+    <nav className={`sticky top-0 z-50 bg-white transition-all duration-300 ${
+      isScrolled ? 'shadow-lg' : 'shadow-md'
+    }`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <Link
+            to="/"
+            className="flex items-center space-x-2 rounded-lg p-1 transition-colors hover:bg-gray-50"
+          >
+            <Heart className="h-8 w-8 text-[#006D77]" />
+            <span className="text-xl font-extrabold text-gray-800">MedCare</span>
+          </Link>
 
-            {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center space-x-6">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`transition-all duration-300 font-semibold text-base py-2 px-3 rounded-lg ${
-                    isActiveLink(item.href)
-                      ? "text-white bg-[#006D77] shadow-md hover:bg-[#005761]"
-                      : "text-gray-600 hover:text-[#006D77] hover:bg-[#EDF6F9]"
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              ))}
-            </div>
-
-            {/* Auth Buttons */}
-            <div className="hidden md:flex items-center space-x-3">
-              {isAuthenticated ? (
-                <>
-                  <Link
-                    to={
-                      user?.role === "doctor"
-                        ? "/dashboard/doctor"
-                        : "/dashboard/patient"
-                    }
-                  >
-                    <button className="px-4 py-2 text-sm font-medium text-white bg-indigo-500 rounded-lg shadow-md hover:bg-indigo-600 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50">
-                      Dashboard
-                    </button>
-                  </Link>
-                  <button
-                    onClick={logout}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
-                  >
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link to="/login">
-                    <button className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                      Login
-                    </button>
-                  </Link>
-                  <Link to="/register">
-                    <button className="px-4 py-2 text-sm font-medium text-white bg-[#006D77] rounded-lg shadow-md hover:bg-[#005761] transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#006D77] focus:ring-opacity-50">
-                      Register
-                    </button>
-                  </Link>
-                </>
-              )}
-            </div>
-
-            {/* Mobile menu button */}
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:block lg:hidden p-2 rounded-md text-gray-700 hover:text-[#006D77] hover:bg-gray-100 transition-colors duration-200"
-            >
-              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex items-center space-x-6">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={`transition-all duration-300 font-semibold text-base py-2 px-3 rounded-lg ${
+                  isActiveLink(item.href)
+                    ? "text-white bg-[#006D77] shadow-md hover:bg-[#005761]"
+                    : "text-gray-600 hover:text-[#006D77] hover:bg-[#EDF6F9]"
+                }`}
+              >
+                {item.name}
+              </Link>
+            ))}
           </div>
+
+          {/* Auth Buttons */}
+          <div className="hidden md:flex items-center space-x-3">
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to={
+                    user?.role === "doctor"
+                      ? "/dashboard/doctor"
+                      : "/dashboard/patient"
+                  }
+                >
+                  <button className="px-4 py-2 text-sm font-medium text-white bg-[#006D77] rounded-lg shadow-md hover:bg-[#005761] transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#006D77] focus:ring-opacity-50">
+                    Dashboard
+                  </button>
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login">
+                  <button className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                    Login
+                  </button>
+                </Link>
+                <Link to="/register">
+                  <button className="px-4 py-2 text-sm font-medium text-white bg-[#006D77] rounded-lg shadow-md hover:bg-[#005761] transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#006D77] focus:ring-opacity-50">
+                    Register
+                  </button>
+                </Link>
+              </>
+            )}
+          </div>
+
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="md:block lg:hidden p-2 rounded-md text-gray-700 hover:text-[#006D77] hover:bg-gray-100 transition-colors duration-200"
+          >
+            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
-      </nav>
+      </div>
 
       {/* Mobile menu */}
       <div
@@ -154,10 +150,7 @@ const Navbar = () => {
                   Dashboard
                 </Link>
                 <button
-                  onClick={() => {
-                    logout();
-                    setIsMenuOpen(false);
-                  }}
+                  onClick={handleLogout}
                   className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#006D77] hover:bg-gray-50"
                 >
                   Logout
@@ -184,7 +177,7 @@ const Navbar = () => {
           </div>
         </div>
       </div>
-    </>
+    </nav>
   );
 };
 

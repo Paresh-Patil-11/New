@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "nodemon server.js",
-    "dev": "cross-env NODE_ENV=development nodemon --require dotenv/config server.js",
-    "seed": "node src/utils/seed.js"
+    "dev": "cross-env NODE_ENV=development nodemon server.js",
+    "seed": "node src/utils/seedDoctor.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

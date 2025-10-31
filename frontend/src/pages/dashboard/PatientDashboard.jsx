@@ -1,4 +1,9 @@
-import { useState, useEffect, createContext, useContext } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuth } from '../../contexts/AuthContext'
+import { useSocket } from '../../contexts/SocketContext'
+import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import { appointmentsAPI, patientsAPI } from '../../services/api'
+import toast from 'react-hot-toast'
 import { 
   Calendar, 
   Clock, 
@@ -6,64 +11,14 @@ import {
   CheckCircle, 
   XCircle, 
   AlertCircle,
-  FileText,
   Phone,
   Mail,
   LogOut,
   Menu,
   X,
-  Loader
+  Edit,
+  Save
 } from 'lucide-react'
-
-// ===================================================================
-// START: Mock Dependencies (To make the single file runnable)
-// ===================================================================
-
-const LoadingSpinner = () => (
-  <div className="flex flex-col items-center justify-center p-8">
-    <Loader className="w-8 h-8 animate-spin" style={{ color: '#006D77' }} />
-    <p className="mt-2 text-sm font-medium" style={{ color: '#006D77' }}>Loading...</p>
-  </div>
-)
-
-const mockPatientUser = {
-  id: 'pat-456',
-  name: 'Alex Johnson',
-  email: 'alex.j@mail.com',
-}
-
-const mockDoctor = { userId: { name: 'Dr. Emily Carter' }, specialization: 'Pediatrics' }
-
-const AuthContext = createContext()
-const useAuth = () => ({ user: mockPatientUser, logout: () => console.log('Logout executed') })
-
-const SocketContext = createContext()
-const useSocket = () => ({ connected: true })
-
-const mockAppointments = [
-  { id: 'a1', doctorId: mockDoctor, date: '2025-11-20', time: '09:00 AM', reason: 'Annual Checkup', status: 'approved' },
-  { id: 'a2', doctorId: mockDoctor, date: '2025-11-25', time: '03:30 PM', reason: 'Sore throat and fever', status: 'pending' },
-  { id: 'a3', doctorId: mockDoctor, date: '2025-10-10', time: '10:00 AM', reason: 'Flu shot', status: 'completed' },
-]
-
-const appointmentsAPI = {
-  getByPatient: async (patientId) => {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    return { success: true, appointments: mockAppointments }
-  },
-  cancel: async (appointmentId) => {
-    await new Promise(resolve => setTimeout(resolve, 300))
-    console.log(`Cancelling appointment ${appointmentId}`)
-    return { success: true, appointmentId, newStatus: 'cancelled' }
-  }
-}
-// ===================================================================
-// END: Mock Dependencies
-// ===================================================================
-
-const PRIMARY = '#006D77'
-const SECONDARY = '#83C5BE'
-const NEUTRAL = '#EDF6F9'
 
 const PatientDashboard = () => {
   const { user, logout } = useAuth()
@@ -73,10 +28,22 @@ const PatientDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [selectedAppointment, setSelectedAppointment] = useState(null)
   const [showAppointmentModal, setShowAppointmentModal] = useState(false)
+  const [activeTab, setActiveTab] = useState('appointments')
+  const [isEditing, setIsEditing] = useState(false)
+  const [profileData, setProfileData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    age: '',
+    gender: '',
+    bloodGroup: '',
+    emergencyContact: { name: '', phone: '', relation: '' }
+  })
 
   useEffect(() => {
     const init = async () => {
       await fetchAppointments()
+      await fetchProfile()
       setLoading(false)
     }
     init()
@@ -85,25 +52,54 @@ const PatientDashboard = () => {
   const fetchAppointments = async () => {
     try {
       const response = await appointmentsAPI.getByPatient(user.id)
-      if (response.success) {
-        setAppointments(response.appointments)
+      if (response.data.success) {
+        setAppointments(response.data.data || [])
       }
     } catch (error) {
       console.error('Error fetching appointments:', error)
+      setAppointments([])
+    }
+  }
+
+  const fetchProfile = async () => {
+    try {
+      const response = await patientsAPI.getById(user.id)
+      if (response.data.success) {
+        const data = response.data.data
+        setProfileData({
+          name: data.User?.name || '',
+          email: data.User?.email || '',
+          phone: data.User?.phone || '',
+          age: data.age || '',
+          gender: data.gender || '',
+          bloodGroup: data.bloodGroup || '',
+          emergencyContact: data.emergencyContact || { name: '', phone: '', relation: '' }
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error)
+    }
+  }
+
+  const handleProfileUpdate = async () => {
+    try {
+      const response = await patientsAPI.update(user.id, profileData)
+      if (response.data.success) {
+        toast.success('Profile updated successfully')
+        setIsEditing(false)
+        await fetchProfile()
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update profile')
     }
   }
 
   const cancelAppointment = async (appointmentId) => {
     try {
-      const response = await appointmentsAPI.cancel(appointmentId)
-      if (response.success) {
-        setAppointments(prev => 
-          prev.map(apt => 
-            apt.id === appointmentId 
-              ? { ...apt, status: 'cancelled' }
-              : apt
-          )
-        )
+      const response = await appointmentsAPI.updateStatus(appointmentId, 'cancelled')
+      if (response.data.success) {
+        toast.success('Appointment cancelled successfully')
+        await fetchAppointments()
         
         if (showAppointmentModal) {
           setShowAppointmentModal(false)
@@ -111,7 +107,7 @@ const PatientDashboard = () => {
         }
       }
     } catch (error) {
-      console.error('Error cancelling appointment:', error)
+      toast.error(error.response?.data?.message || 'Failed to cancel appointment')
     }
   }
 
@@ -139,56 +135,26 @@ const PatientDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: NEUTRAL }}>
+      <div className="min-h-screen flex items-center justify-center bg-[#EDF6F9]">
         <LoadingSpinner size="lg" />
       </div>
     )
   }
 
-  const Card = ({ children, hoverScale = false }) => (
-    <div 
-      className={`bg-white rounded-xl shadow-lg transition duration-300 p-6 ${
-        hoverScale ? 'hover:shadow-xl transform hover:scale-[1.02]' : 'hover:shadow-xl'
-      }`}
-    >
-      {children}
-    </div>
-  )
-
-  const ButtonPrimary = ({ children, onClick, className = '' }) => (
-    <button
-      onClick={onClick}
-      className={`px-4 py-2 text-sm font-medium rounded-lg text-white transition duration-200 ${className}`}
-      style={{ backgroundColor: PRIMARY }}
-    >
-      {children}
-    </button>
-  )
-  
-  const ButtonOutline = ({ children, onClick, className = '' }) => (
-    <button
-      onClick={onClick}
-      className={`px-4 py-2 text-sm font-medium rounded-lg border transition duration-200 ${className}`}
-      style={{ borderColor: PRIMARY, color: PRIMARY }}
-    >
-      {children}
-    </button>
-  )
-
   return (
-    <div className="min-h-screen" style={{ backgroundColor: NEUTRAL }}>
-      <header className="bg-white shadow-md border-b" style={{ borderColor: SECONDARY }}>
+    <div className="min-h-screen bg-[#EDF6F9]">
+      <header className="bg-white shadow-md border-b border-[#83C5BE]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 rounded-md text-gray-600 hover:bg-gray-100 lg:hidden"
+                className="p-2 rounded-md text-gray-600 hover:bg-gray-100"
                 aria-label="Toggle Menu"
               >
                 {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </button>
-              <h1 className="ml-4 text-xl font-extrabold" style={{ color: PRIMARY }}>
+              <h1 className="ml-4 text-xl font-extrabold text-[#006D77]">
                 Patient Dashboard
               </h1>
             </div>
@@ -206,7 +172,7 @@ const PatientDashboard = () => {
                   <p className="text-sm font-semibold text-gray-900">{user?.name}</p>
                   <p className="text-xs text-gray-500">Patient</p>
                 </div>
-                <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: PRIMARY }}>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center bg-[#006D77]">
                   <span className="text-white text-base font-medium">
                     {user?.name?.charAt(0)}
                   </span>
@@ -226,11 +192,11 @@ const PatientDashboard = () => {
       </header>
 
       <div className="flex max-w-7xl mx-auto">
-        <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl lg:shadow-none transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 lg:border-r ${
+        <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`} style={{ borderColor: SECONDARY }}>
+        } lg:translate-x-0 lg:static lg:inset-0 lg:border-r border-[#83C5BE]`}>
           <div className="flex items-center justify-between h-16 px-6 border-b lg:hidden">
-            <h2 className="text-lg font-bold" style={{ color: PRIMARY }}>Menu</h2>
+            <h2 className="text-lg font-bold text-[#006D77]">Menu</h2>
             <button
               onClick={() => setSidebarOpen(false)}
               className="p-2 rounded-md text-gray-600 hover:bg-gray-100"
@@ -241,150 +207,315 @@ const PatientDashboard = () => {
           
           <nav className="mt-8 px-4">
             <div className="space-y-1">
-              <a href="#" className="flex items-center px-4 py-3 text-sm font-semibold rounded-xl text-white transition duration-200" style={{ backgroundColor: PRIMARY }}>
+              <button
+                onClick={() => { setActiveTab('appointments'); setSidebarOpen(false) }}
+                className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-200 ${
+                  activeTab === 'appointments' ? 'bg-[#006D77] text-white' : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
                 <Calendar className="mr-3 h-5 w-5" />
                 My Appointments
-              </a>
-              <a href="#" className="flex items-center px-4 py-3 text-sm font-medium rounded-xl text-gray-700 hover:bg-gray-100 transition duration-200">
-                <FileText className="mr-3 h-5 w-5" />
-                Medical Records
-              </a>
-              <a href="#" className="flex items-center px-4 py-3 text-sm font-medium rounded-xl text-gray-700 hover:bg-gray-100 transition duration-200">
+              </button>
+              <button
+                onClick={() => { setActiveTab('profile'); setSidebarOpen(false) }}
+                className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-200 ${
+                  activeTab === 'profile' ? 'bg-[#006D77] text-white' : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
                 <User className="mr-3 h-5 w-5" />
                 Profile
-              </a>
+              </button>
             </div>
           </nav>
         </aside>
 
         <main className="flex-1 px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
-            <h2 className="text-3xl font-extrabold text-gray-900 mb-2">
-              Welcome back, <span style={{ color: PRIMARY }}>{user?.name}</span>!
-            </h2>
-            <p className="text-gray-600">
-              Your comprehensive health management starts here.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card hoverScale>
-              <a href="/appointment" className="block">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 p-3 rounded-xl" style={{ backgroundColor: SECONDARY }}>
-                    <Calendar className="h-7 w-7" style={{ color: PRIMARY }} />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">New Appointment</p>
-                    <p className="text-xl font-bold text-gray-900">Schedule Now</p>
-                  </div>
-                </div>
-              </a>
-            </Card>
-            
-            <Card>
-              <div className="flex items-center">
-                <div className="flex-shrink-0 p-3 rounded-xl bg-red-100">
-                  <Phone className="h-7 w-7 text-red-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Emergency</p>
-                  <p className="text-xl font-bold text-gray-900">Call 911</p>
-                </div>
+          {activeTab === 'appointments' ? (
+            <>
+              <div className="mb-8">
+                <h2 className="text-3xl font-extrabold text-gray-900 mb-2">
+                  Welcome back, <span className="text-[#006D77]">{user?.name}</span>!
+                </h2>
+                <p className="text-gray-600">
+                  Your comprehensive health management starts here.
+                </p>
               </div>
-            </Card>
-            
-            <Card>
-              <div className="flex items-center">
-                <div className="flex-shrink-0 p-3 rounded-xl bg-blue-100">
-                  <Mail className="h-7 w-7 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Support</p>
-                  <p className="text-xl font-bold text-gray-900">Get Help</p>
-                </div>
-              </div>
-            </Card>
-          </div>
 
-          <Card>
-            <div className="px-6 py-4 border-b border-gray-100">
-              <h3 className="text-xl font-bold text-gray-900">My Appointments</h3>
-            </div>
-            
-            <div className="overflow-x-auto">
-              {appointments.length === 0 ? (
-                <div className="text-center py-12">
-                  <Calendar className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-base font-semibold text-gray-900">No appointments scheduled</h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Book your first appointment to view it here.
-                  </p>
-                  <a href="/appointment" className="mt-4 inline-block">
-                    <ButtonPrimary>
-                      Book Appointment
-                    </ButtonPrimary>
-                  </a>
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-100">
-                  {appointments.map((appointment) => (
-                    <div key={appointment.id} className="p-4 hover:bg-gray-50 transition duration-150 rounded-lg flex flex-col md:flex-row items-start md:items-center justify-between">
-                      <div className="flex items-center space-x-4 mb-3 md:mb-0">
-                        <div className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: SECONDARY }}>
-                          <User className="h-6 w-6" style={{ color: PRIMARY }} />
-                        </div>
-                        <div>
-                          <p className="text-base font-semibold text-gray-900">
-                            Dr. {appointment.doctorId?.userId?.name}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {appointment.doctorId?.specialization}
-                          </p>
-                          <div className="flex items-center space-x-4 mt-1">
-                            <span className="text-xs text-gray-500 flex items-center">
-                              <Calendar className="h-3 w-3 mr-1" />
-                              {new Date(appointment.date).toLocaleDateString()}
-                            </span>
-                            <span className="text-xs text-gray-500 flex items-center">
-                              <Clock className="h-3 w-3 mr-1" />
-                              {appointment.time}
-                            </span>
-                          </div>
-                        </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition duration-300 transform hover:scale-105 cursor-pointer">
+                  <a href="/appointment" className="block">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 p-3 rounded-xl bg-[#83C5BE]">
+                        <Calendar className="h-7 w-7 text-[#006D77]" />
                       </div>
-                      
-                      <div className="flex flex-wrap items-center space-x-2">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(appointment.status)} mr-2`}>
-                          {getStatusIcon(appointment.status)}
-                          <span className="ml-1">{appointment.status}</span>
-                        </span>
-                        
-                        <ButtonOutline
-                          onClick={() => {
-                            setSelectedAppointment(appointment)
-                            setShowAppointmentModal(true)
-                          }}
-                          className="my-1"
-                        >
-                          View Details
-                        </ButtonOutline>
-                        
-                        {appointment.status === 'pending' && (
-                          <ButtonOutline
-                            onClick={() => cancelAppointment(appointment.id)}
-                            className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white my-1"
-                          >
-                            Cancel
-                          </ButtonOutline>
-                        )}
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-500">New Appointment</p>
+                        <p className="text-xl font-bold text-gray-900">Schedule Now</p>
                       </div>
                     </div>
-                  ))}
+                  </a>
                 </div>
-              )}
+                
+                <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition duration-300">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 p-3 rounded-xl bg-red-100">
+                      <Phone className="h-7 w-7 text-red-600" />
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-500">Emergency</p>
+                      <p className="text-xl font-bold text-gray-900">Call 108</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition duration-300">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 p-3 rounded-xl bg-blue-100">
+                      <Mail className="h-7 w-7 text-blue-600" />
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-500">Support</p>
+                      <p className="text-xl font-bold text-gray-900">Get Help</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-lg">
+                <div className="px-6 py-4 border-b border-gray-100">
+                  <h3 className="text-xl font-bold text-gray-900">My Appointments</h3>
+                </div>
+                
+                <div className="overflow-x-auto">
+                  {appointments.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Calendar className="mx-auto h-12 w-12 text-gray-400" />
+                      <h3 className="mt-2 text-base font-semibold text-gray-900">No appointments scheduled</h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Book your first appointment to view it here.
+                      </p>
+                      <a href="/appointment" className="mt-4 inline-block">
+                        <button className="bg-[#006D77] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#005662] transition-colors">
+                          Book Appointment
+                        </button>
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-100">
+                      {appointments.map((appointment) => (
+                        <div key={appointment.id} className="p-4 hover:bg-gray-50 transition duration-150 rounded-lg flex flex-col md:flex-row items-start md:items-center justify-between">
+                          <div className="flex items-center space-x-4 mb-3 md:mb-0">
+                            <div className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center bg-[#83C5BE]">
+                              <User className="h-6 w-6 text-[#006D77]" />
+                            </div>
+                            <div>
+                              <p className="text-base font-semibold text-gray-900">
+                                Dr. {appointment.Doctor?.User?.name || 'N/A'}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                {appointment.Doctor?.specialization || 'General'}
+                              </p>
+                              <div className="flex items-center space-x-4 mt-1">
+                                <span className="text-xs text-gray-500 flex items-center">
+                                  <Calendar className="h-3 w-3 mr-1" />
+                                  {new Date(appointment.date).toLocaleDateString()}
+                                </span>
+                                <span className="text-xs text-gray-500 flex items-center">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  {appointment.time}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-wrap items-center space-x-2">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(appointment.status)} mr-2`}>
+                              {getStatusIcon(appointment.status)}
+                              <span className="ml-1 capitalize">{appointment.status}</span>
+                            </span>
+                            
+                            <button
+                              onClick={() => {
+                                setSelectedAppointment(appointment)
+                                setShowAppointmentModal(true)
+                              }}
+                              className="px-4 py-2 text-sm font-medium rounded-lg border border-[#006D77] text-[#006D77] hover:bg-[#006D77] hover:text-white transition-colors my-1"
+                            >
+                              View Details
+                            </button>
+                            
+                            {(appointment.status === 'pending' || appointment.status === 'approved') && (
+                              <button
+                                onClick={() => cancelAppointment(appointment.id)}
+                                className="px-4 py-2 text-sm font-medium rounded-lg border border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors my-1"
+                              >
+                                Cancel
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-gray-900">My Profile</h3>
+                {!isEditing ? (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center px-4 py-2 bg-[#006D77] text-white rounded-lg hover:bg-[#005662] transition-colors"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Profile
+                  </button>
+                ) : (
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={handleProfileUpdate}
+                      className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsEditing(false)
+                        fetchProfile()
+                      }}
+                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Name</label>
+                  <input
+                    type="text"
+                    value={profileData.name}
+                    onChange={(e) => setProfileData({...profileData, name: e.target.value})}
+                    disabled={!isEditing}
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-[#006D77] focus:outline-none disabled:bg-gray-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                  <input
+                    type="email"
+                    value={profileData.email}
+                    onChange={(e) => setProfileData({...profileData, email: e.target.value})}
+                    disabled={!isEditing}
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-[#006D77] focus:outline-none disabled:bg-gray-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Phone</label>
+                  <input
+                    type="tel"
+                    value={profileData.phone}
+                    onChange={(e) => setProfileData({...profileData, phone: e.target.value})}
+                    disabled={!isEditing}
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-[#006D77] focus:outline-none disabled:bg-gray-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Age</label>
+                  <input
+                    type="number"
+                    value={profileData.age}
+                    onChange={(e) => setProfileData({...profileData, age: e.target.value})}
+                    disabled={!isEditing}
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-[#006D77] focus:outline-none disabled:bg-gray-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Gender</label>
+                  <select
+                    value={profileData.gender}
+                    onChange={(e) => setProfileData({...profileData, gender: e.target.value})}
+                    disabled={!isEditing}
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-[#006D77] focus:outline-none disabled:bg-gray-100"
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Blood Group</label>
+                  <input
+                    type="text"
+                    value={profileData.bloodGroup}
+                    onChange={(e) => setProfileData({...profileData, bloodGroup: e.target.value})}
+                    disabled={!isEditing}
+                    placeholder="e.g., A+, B-, O+"
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-[#006D77] focus:outline-none disabled:bg-gray-100"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <h4 className="text-lg font-bold text-gray-900 mb-4">Emergency Contact</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Name</label>
+                    <input
+                      type="text"
+                      value={profileData.emergencyContact.name}
+                      onChange={(e) => setProfileData({
+                        ...profileData, 
+                        emergencyContact: {...profileData.emergencyContact, name: e.target.value}
+                      })}
+                      disabled={!isEditing}
+                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-[#006D77] focus:outline-none disabled:bg-gray-100"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Phone</label>
+                    <input
+                      type="tel"
+                      value={profileData.emergencyContact.phone}
+                      onChange={(e) => setProfileData({
+                        ...profileData, 
+                        emergencyContact: {...profileData.emergencyContact, phone: e.target.value}
+                      })}
+                      disabled={!isEditing}
+                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-[#006D77] focus:outline-none disabled:bg-gray-100"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Relation</label>
+                    <input
+                      type="text"
+                      value={profileData.emergencyContact.relation}
+                      onChange={(e) => setProfileData({
+                        ...profileData, 
+                        emergencyContact: {...profileData.emergencyContact, relation: e.target.value}
+                      })}
+                      disabled={!isEditing}
+                      placeholder="e.g., Father, Mother, Spouse"
+                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-[#006D77] focus:outline-none disabled:bg-gray-100"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-          </Card>
+          )}
         </main>
       </div>
 
@@ -406,10 +537,10 @@ const PatientDashboard = () => {
             </div>
             
             <div className="space-y-4">
-              <div className="p-3 rounded-lg" style={{ backgroundColor: NEUTRAL }}>
+              <div className="p-3 rounded-lg bg-[#EDF6F9]">
                 <p className="text-sm font-semibold text-gray-500">Doctor</p>
-                <p className="text-base font-medium text-gray-900">Dr. {selectedAppointment.doctorId?.userId?.name}</p>
-                <p className="text-sm text-gray-600">{selectedAppointment.doctorId?.specialization}</p>
+                <p className="text-base font-medium text-gray-900">Dr. {selectedAppointment.Doctor?.User?.name || 'N/A'}</p>
+                <p className="text-sm text-gray-600">{selectedAppointment.Doctor?.specialization || 'General'}</p>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
@@ -432,19 +563,19 @@ const PatientDashboard = () => {
                 <p className="text-sm font-semibold text-gray-500">Status</p>
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${getStatusColor(selectedAppointment.status)}`}>
                   {getStatusIcon(selectedAppointment.status)}
-                  <span className="ml-1">{selectedAppointment.status}</span>
+                  <span className="ml-1 capitalize">{selectedAppointment.status}</span>
                 </span>
               </div>
             </div>
             
             <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-gray-100">
-              {selectedAppointment.status === 'pending' && (
-                <ButtonOutline
+              {(selectedAppointment.status === 'pending' || selectedAppointment.status === 'approved') && (
+                <button
                   onClick={() => cancelAppointment(selectedAppointment.id)}
-                  className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+                  className="px-4 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors"
                 >
                   Cancel Appointment
-                </ButtonOutline>
+                </button>
               )}
             </div>
           </div>

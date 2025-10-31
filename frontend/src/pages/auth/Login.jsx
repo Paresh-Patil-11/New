@@ -1,10 +1,9 @@
-// frontend/src/pages/auth/Login.jsx - UPDATED VERSION
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import ForgotPasswordModal from '../../components/auth/ForgotPasswordModal'
-import { Heart, Mail, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react'
+import { Heart, Mail, Lock, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react'
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -14,6 +13,8 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState({})
   const [showSuccess, setShowSuccess] = useState(false)
+  const [showError, setShowError] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const { login, loading } = useAuth()
   const navigate = useNavigate()
@@ -29,6 +30,9 @@ const Login = () => {
         ...prev,
         [name]: ''
       }))
+    }
+    if (showError) {
+      setShowError(false)
     }
   }
 
@@ -58,21 +62,24 @@ const Login = () => {
       return
     }
 
-    const result = await login({ ...formData, role: 'patient' })
+    const result = await login(formData)
     
     if (result.success) {
       setShowSuccess(true)
       setTimeout(() => {
-        navigate('/dashboard/patient')
+        const dashboardRoute = result.user.role === 'doctor' ? '/dashboard/doctor' : '/dashboard/patient'
+        navigate(dashboardRoute)
       }, 2000)
+    } else {
+      setErrorMessage(result.message || 'Invalid email or password. Please try again.')
+      setShowError(true)
     }
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#EDF6F9] to-[#83C5BE] py-12 px-4 sm:px-6 lg:px-8">
-      {/* Success Modal */}
       {showSuccess && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full transform animate-scale-in">
             <div className="text-center">
               <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
@@ -89,7 +96,30 @@ const Login = () => {
         </div>
       )}
 
-      {/* Forgot Password Modal */}
+      {showError && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full transform animate-scale-in">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                <XCircle className="h-10 w-10 text-red-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                Login Failed
+              </h3>
+              <p className="text-gray-600 mb-6">
+                {errorMessage}
+              </p>
+              <button
+                onClick={() => setShowError(false)}
+                className="w-full px-6 py-3 bg-[#006D77] text-white rounded-lg hover:bg-[#005662] transition-colors font-semibold"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ForgotPasswordModal 
         isOpen={showForgotPassword} 
         onClose={() => setShowForgotPassword(false)} 
@@ -112,7 +142,6 @@ const Login = () => {
 
         <div className="bg-white rounded-2xl shadow-2xl p-8 backdrop-blur-lg">
           <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
                 Email Address
@@ -141,7 +170,6 @@ const Login = () => {
               )}
             </div>
 
-            {/* Password */}
             <div>
               <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
                 Password
@@ -181,7 +209,6 @@ const Login = () => {
               )}
             </div>
 
-            {/* Remember Me & Forgot Password */}
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
@@ -205,7 +232,6 @@ const Login = () => {
               </div>
             </div>
 
-            {/* Submit Button */}
             <div>
               <button
                 type="submit"
@@ -224,7 +250,6 @@ const Login = () => {
             </div>
           </form>
 
-          {/* Sign Up Link */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}

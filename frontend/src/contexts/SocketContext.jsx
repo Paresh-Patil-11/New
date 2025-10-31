@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { io } from "socket.io-client";
+import { io } from "socket.io-client"
 import { useAuth } from './AuthContext'
-import toast from 'react-hot-toast'
 
 const SocketContext = createContext()
 
@@ -25,38 +24,38 @@ export const SocketProvider = ({ children }) => {
           token: localStorage.getItem('token'),
           userId: user.id,
           role: user.role
-        }
+        },
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5
       })
 
       newSocket.on('connect', () => {
-        console.log('Connected to server')
+        console.log('Socket connected')
         setConnected(true)
-        toast.success('Real-time connection established')
       })
 
       newSocket.on('disconnect', () => {
-        console.log('Disconnected from server')
+        console.log('Socket disconnected')
         setConnected(false)
-        toast.error('Real-time connection lost')
       })
 
-      // Listen for appointment updates
+      newSocket.on('connect_error', (error) => {
+        console.log('Socket connection error:', error)
+        setConnected(false)
+      })
+
       newSocket.on('appointmentUpdate', (data) => {
-        toast.success(`Appointment ${data.status}: ${data.message}`)
+        console.log('Appointment update received:', data)
       })
 
-      // Listen for new appointments (for doctors)
       newSocket.on('newAppointment', (data) => {
-        if (user.role === 'doctor') {
-          toast.success('New appointment request received')
-        }
+        console.log('New appointment received:', data)
       })
 
-      // Listen for appointment status changes (for patients)
       newSocket.on('appointmentStatusChange', (data) => {
-        if (user.role === 'patient') {
-          toast.success(`Your appointment has been ${data.status}`)
-        }
+        console.log('Appointment status changed:', data)
       })
 
       setSocket(newSocket)
@@ -66,6 +65,8 @@ export const SocketProvider = ({ children }) => {
         setSocket(null)
         setConnected(false)
       }
+    } else {
+      setConnected(false)
     }
   }, [isAuthenticated, user])
 

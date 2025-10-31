@@ -1,17 +1,15 @@
-// frontend/src/components/auth/ForgotPasswordModal.jsx
 import { useState } from 'react'
 import { X, Mail, Lock, CheckCircle, AlertCircle, Loader } from 'lucide-react'
-import axios from 'axios'
+import { authAPI } from '../../services/api'
+import toast from 'react-hot-toast'
 
 const ForgotPasswordModal = ({ isOpen, onClose }) => {
-  const [step, setStep] = useState(1) // 1: Email, 2: OTP, 3: New Password
+  const [step, setStep] = useState(1)
   const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
 
   const resetForm = () => {
     setStep(1)
@@ -19,8 +17,6 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
     setOtp('')
     setNewPassword('')
     setConfirmPassword('')
-    setError('')
-    setSuccess('')
   }
 
   const handleClose = () => {
@@ -30,23 +26,19 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
 
   const handleRequestOTP = async (e) => {
     e.preventDefault()
-    setError('')
     setLoading(true)
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/forgot-password', {
-        email,
-      })
+      const response = await authAPI.forgotPassword(email)
 
       if (response.data.success) {
-        setSuccess('OTP sent to your email!')
+        toast.success('OTP sent to your email!')
         setTimeout(() => {
           setStep(2)
-          setSuccess('')
         }, 1500)
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to send OTP')
+      toast.error(err.response?.data?.message || 'Failed to send OTP')
     } finally {
       setLoading(false)
     }
@@ -54,24 +46,19 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
 
   const handleVerifyOTP = async (e) => {
     e.preventDefault()
-    setError('')
     setLoading(true)
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/verify-otp', {
-        email,
-        otp,
-      })
+      const response = await authAPI.verifyOTP(email, otp)
 
       if (response.data.success) {
-        setSuccess('OTP verified successfully!')
+        toast.success('OTP verified successfully!')
         setTimeout(() => {
           setStep(3)
-          setSuccess('')
         }, 1500)
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid OTP')
+      toast.error(err.response?.data?.message || 'Invalid OTP')
     } finally {
       setLoading(false)
     }
@@ -79,35 +66,30 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
 
   const handleResetPassword = async (e) => {
     e.preventDefault()
-    setError('')
 
     if (newPassword !== confirmPassword) {
-      setError('Passwords do not match')
+      toast.error('Passwords do not match')
       return
     }
 
     if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters')
+      toast.error('Password must be at least 6 characters')
       return
     }
 
     setLoading(true)
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/reset-password', {
-        email,
-        otp,
-        newPassword,
-      })
+      const response = await authAPI.resetPassword(email, otp, newPassword)
 
       if (response.data.success) {
-        setSuccess('Password reset successful!')
+        toast.success('Password reset successful!')
         setTimeout(() => {
           handleClose()
         }, 2000)
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to reset password')
+      toast.error(err.response?.data?.message || 'Failed to reset password')
     } finally {
       setLoading(false)
     }
@@ -118,7 +100,6 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-in">
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-[#006D77]">
             {step === 1 && 'Forgot Password'}
@@ -133,7 +114,6 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Progress Indicator */}
         <div className="flex items-center justify-center mb-8">
           {[1, 2, 3].map((s) => (
             <div key={s} className="flex items-center">
@@ -157,23 +137,6 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
           ))}
         </div>
 
-        {/* Success Message */}
-        {success && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-            <span className="text-sm text-green-700">{success}</span>
-          </div>
-        )}
-
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center">
-            <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-            <span className="text-sm text-red-700">{error}</span>
-          </div>
-        )}
-
-        {/* Step 1: Email Input */}
         {step === 1 && (
           <form onSubmit={handleRequestOTP}>
             <p className="text-gray-600 mb-6 text-sm">
@@ -212,7 +175,6 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
           </form>
         )}
 
-        {/* Step 2: OTP Input */}
         {step === 2 && (
           <form onSubmit={handleVerifyOTP}>
             <p className="text-gray-600 mb-6 text-sm">
@@ -256,7 +218,6 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
           </form>
         )}
 
-        {/* Step 3: New Password Input */}
         {step === 3 && (
           <form onSubmit={handleResetPassword}>
             <p className="text-gray-600 mb-6 text-sm">

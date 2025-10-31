@@ -1,24 +1,6 @@
-import { useState } from 'react'
-import { Phone, Mail, MapPin, Clock, Send, MessageCircle, Headphones, Calendar } from 'lucide-react'
+import { Phone, Mail, MapPin, Clock, Headphones, Calendar, MessageCircle } from 'lucide-react'
 
 const Contact = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: ''
-  })
-  const [submitted, setSubmitted] = useState(false)
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    setSubmitted(true)
-    setTimeout(() => {
-      setSubmitted(false)
-      setFormData({ name: '', email: '', subject: '', message: '' })
-    }, 3000)
-  }
-
   const contactCards = [
     {
       icon: Phone,
@@ -58,7 +40,6 @@ const Contact = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#EDF6F9] via-white to-[#83C5BE]/10">
-      {/* Hero Section */}
       <div className="bg-gradient-to-r from-[#006D77] to-[#005761] text-white py-12 md:py-20">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4">Get in Touch</h1>
@@ -69,7 +50,6 @@ const Contact = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8 md:py-16">
-        {/* Contact Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-12 md:mb-16">
           {contactCards.map((card, index) => (
             <div
@@ -89,91 +69,8 @@ const Contact = () => {
           ))}
         </div>
 
-        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 mb-12 md:mb-16">
-          {/* Contact Form */}
-          <div className="bg-white rounded-2xl shadow-2xl p-6 md:p-8 lg:p-10 border-t-4 border-[#006D77]">
-            <h2 className="text-2xl md:text-3xl font-bold text-[#006D77] mb-2">Send us a Message</h2>
-            <p className="text-gray-600 mb-6 md:mb-8">
-              Fill out the form below and we'll get back to you as soon as possible
-            </p>
-
-            {submitted && (
-              <div className="bg-[#83C5BE]/20 border-l-4 border-[#006D77] p-4 mb-6 rounded">
-                <p className="text-[#006D77] font-semibold">Message sent successfully!</p>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6">
-              <div>
-                <label className="block text-sm font-semibold text-[#006D77] mb-2">
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#006D77] focus:ring-2 focus:ring-[#83C5BE]/30 transition-all duration-200"
-                  placeholder="John Doe"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-[#006D77] mb-2">
-                  Email Address *
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#006D77] focus:ring-2 focus:ring-[#83C5BE]/30 transition-all duration-200"
-                  placeholder="john@example.com"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-[#006D77] mb-2">
-                  Subject *
-                </label>
-                <input
-                  type="text"
-                  value={formData.subject}
-                  onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#006D77] focus:ring-2 focus:ring-[#83C5BE]/30 transition-all duration-200"
-                  placeholder="How can we help?"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-[#006D77] mb-2">
-                  Message *
-                </label>
-                <textarea
-                  value={formData.message}
-                  onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#006D77] focus:ring-2 focus:ring-[#83C5BE]/30 transition-all duration-200 resize-none"
-                  rows={6}
-                  placeholder="Tell us more about your inquiry..."
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-gradient-to-r from-[#006D77] to-[#005761] text-white py-3 md:py-4 px-6 rounded-lg font-semibold hover:from-[#005761] hover:to-[#004a52] transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center"
-              >
-                <Send className="w-5 h-5 mr-2" />
-                Send Message
-              </button>
-            </form>
-          </div>
-
-          {/* Right Column - Additional Info */}
           <div className="space-y-6 md:space-y-8">
-            {/* Departments */}
             <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 border-l-4 border-[#83C5BE]">
               <h3 className="text-xl md:text-2xl font-bold text-[#006D77] mb-6">Quick Contact</h3>
               <div className="space-y-4">
@@ -189,7 +86,6 @@ const Contact = () => {
               </div>
             </div>
 
-            {/* FAQ Quick Links */}
             <div className="bg-gradient-to-br from-[#006D77] to-[#005761] text-white rounded-2xl shadow-lg p-6 md:p-8">
               <h3 className="text-xl md:text-2xl font-bold mb-4">Frequently Asked</h3>
               <ul className="space-y-3">
@@ -215,7 +111,6 @@ const Contact = () => {
               </button>
             </div>
 
-            {/* Emergency Banner */}
             <div className="bg-red-50 border-l-4 border-red-600 p-6 rounded-lg">
               <h4 className="text-lg font-bold text-red-900 mb-2">Medical Emergency?</h4>
               <p className="text-red-800 text-sm mb-3">
@@ -226,12 +121,75 @@ const Contact = () => {
               </button>
             </div>
           </div>
+
+          <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 border-l-4 border-[#83C5BE]">
+            <h3 className="text-xl md:text-2xl font-bold text-[#006D77] mb-6">Visit Us</h3>
+            <div className="space-y-6">
+              <div>
+                <h4 className="font-bold text-[#006D77] mb-2 text-lg">Location</h4>
+                <p className="text-gray-700 mb-4">
+                  123 Medical Center Drive<br />
+                  City, State 12345<br />
+                  United States
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-[#006D77] mb-2 text-lg">Office Hours</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">Monday - Friday</span>
+                    <span className="font-semibold text-[#006D77]">9:00 AM - 5:00 PM</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">Saturday</span>
+                    <span className="font-semibold text-[#006D77]">10:00 AM - 2:00 PM</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">Sunday</span>
+                    <span className="font-semibold text-[#006D77]">Closed</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-[#006D77] mb-2 text-lg">Contact Information</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center">
+                    <Phone className="w-5 h-5 text-[#006D77] mr-3" />
+                    <span className="text-gray-700">+1 (555) 123-4567</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Mail className="w-5 h-5 text-[#006D77] mr-3" />
+                    <span className="text-gray-700">info@medcare.com</span>
+                  </div>
+                  <div className="flex items-center">
+                    <MapPin className="w-5 h-5 text-[#006D77] mr-3" />
+                    <span className="text-gray-700">Get Directions</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-[#006D77] mb-2 text-lg">Parking Information</h4>
+                <p className="text-gray-700 text-sm">
+                  Free parking available for visitors in our main lot. Accessible parking spots are located near all entrances.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-[#006D77] mb-2 text-lg">Public Transportation</h4>
+                <p className="text-gray-700 text-sm">
+                  Served by bus routes 12, 45, and 67. Nearest metro station is Medical Center (0.3 miles).
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Location Map */}
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border-t-4 border-[#006D77]">
           <div className="p-6 md:p-8 bg-gradient-to-r from-[#006D77] to-[#005761] text-white">
-            <h2 className="text-2xl md:text-3xl font-bold mb-2">Visit Our Location</h2>
+            <h2 className="text-2xl md:text-3xl font-bold mb-2">Our Location</h2>
             <p className="text-[#83C5BE]">123 Medical Center Drive, City, State 12345</p>
           </div>
           <div className="relative h-64 md:h-96 lg:h-[500px]">

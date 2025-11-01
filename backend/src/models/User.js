@@ -27,11 +27,23 @@ const User = sequelize.define('User', {
   resetPasswordExpire: { type: DataTypes.DATE },
 }, { 
   timestamps: true,
-  tableName: 'users'
-});
-
-User.beforeCreate(async (user) => {
-  user.password = await bcrypt.hash(user.password, 12);
+  tableName: 'users',
+  hooks: {
+    beforeCreate: async (user) => {
+      if (user.password) {
+        user.password = await bcrypt.hash(user.password, 12);
+      }
+    },
+    beforeUpdate: async (user) => {
+      // Only hash if password field was changed and it's not already hashed
+      if (user.changed('password') && user.password) {
+        // Check if password is already hashed (bcrypt hashes start with $2a$ or $2b$)
+        if (!user.password.startsWith('$2')) {
+          user.password = await bcrypt.hash(user.password, 12);
+        }
+      }
+    }
+  }
 });
 
 User.prototype.comparePassword = async function(password) {
